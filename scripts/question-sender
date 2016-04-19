@@ -1,0 +1,52 @@
+#!/bin/bash
+
+root_dir=$1
+data_dir=$2
+
+if ! [[ -e $data_dir/questionlist.sch ]]; then							#if temporary question list does not exist
+	echo "no questionlist.sch found on data, please run ss-crowd scheduler"			#terminates on error
+	exit 1
+fi
+												
+questionlist_file=$data_dir/questionlist.sch			
+
+scripts/log-sender -m $root_dir "started posting question"	
+
+while :; do
+
+	read -r sched_date sched_time quoted_question <<< $(head -n1 $questionlist_file) 		#get a question from question list
+
+	now=$(date '+%s')
+	scheduled_time=$(date -d "$sched_date $sched_time" '+%s')
+
+	echo $now $scheduled_time
+
+	if (( $now > $scheduled_time )); then 
+
+		question=$(echo $quoted_question | sed s/\"//g)
+
+		id_question=$(java -jar bin/twitter-sender.jar "$question" conf/twitterauth.conf) 				#get results from twitter java module
+		status=$?
+
+		code=$(date +%Y%m%d%H%M%S)
+
+		if [[ $status == 0 ]]; then 								#if twitter posting is successful
+			echo $code $id_question $question >> $data_dir/questionlist.ref
+			scripts/log-sender -m $root_dir "posted question with id $id_question and code $code"
+		else
+			scripts/log-sender -m $root_dir "error on posting question "$question""
+		fi
+
+		sed -i '1d' $questionlist_file 								#reduce question list
+
+		if ! [[ -s $questionlist_file ]]; then							#if there are no more questions
+			rm $questionlist_file								#remove temporary question list
+			scripts/log-sender -m $root_dir "no more questions to post"
+			exit 0										#exit loop
+		fi
+	fi	
+
+	sleep 1m 									#sleeps for a minute
+done
+
+

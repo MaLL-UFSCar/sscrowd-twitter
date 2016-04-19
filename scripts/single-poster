@@ -1,0 +1,14 @@
+#A prototype of the application of the SS-Crowd algorithm.
+
+#This application look for answers for a single question on Twitter by posting and waiting for answers from a Twitter profile followers.
+
+read -p "What do you want to know?" $question
+
+id_question=$(java -jar bin/twitter-sender.jar "$question" conf/twitterauth.conf)       #get results from twitter java module
+status=$?
+
+if [[ $status == 0 ]]; then
+	
+else
+	echo "A problem ocurred during the status update"
+

@@ -1,0 +1,19 @@
+#!/bin/bash
+
+data_dir=$1
+
+declare -A reference
+
+while read line; do
+	read code id_question question <<< $line
+	reference[$code]=$question
+done < $data_dir/questionlist.ref
+
+for i in "${!reference[@]}"; do
+	for j in "${!reference[@]}"; do
+		if [[ $i -lt $j && ${reference[$i]} == ${reference[$j]} ]]; then
+			cat $data_dir/answers/$j.ans >> $data_dir/answers/$i.ans
+			mv $data_dir/answers/$j.ans $data_dir/answers/$j.dup
+		fi
+	done
+done

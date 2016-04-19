@@ -1,0 +1,32 @@
+#!/bin/bash
+
+root_dir=$1
+data_dir=$2
+answer_dir=$(echo $data_dir/answers)
+hist_dir=$(echo $root_dir/logs/hist)
+
+#save the latest set of answers
+tar cfv $hist_dir/answers_$(date +%Y%m%d%H%M%S).tar.gz $answer_dir
+
+#get the answers
+while :; do
+	java -jar bin/twitter-receiver.jar $answer_dir $root_dir/data/questionlist.ref conf/twitterauth.conf 2>> $root_dir/logs/error.log
+	sleep 120m
+done
+
+#concatenate duplicates after a possible reschedule
+declare -A reference
+
+while read line; do
+        read code id_question question <<< $line
+        reference[$code]=$question
+done < $data_dir/questionlist.ref
+
+for i in "${!reference[@]}"; do
+        for j in "${!reference[@]}"; do
+                if [[ $i -lt $j && ${reference[$i]} == ${reference[$j]} ]]; then
+                        cat $data_dir/answers/$j.ans >> $data_dir/answers/$i.ans
+                        mv $data_dir/answers/$j.ans $data_dir/answers/$j.dup
+                fi
+        done
+done

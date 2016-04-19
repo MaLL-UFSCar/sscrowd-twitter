@@ -1,0 +1,7 @@
+#!/bin/bash
+data_dir=$1
+
+while read line; do
+	hash=$(echo -n $line | md5sum | cut -f1 -d' ')
+	echo $hash \"$line\" >> $data_dir/questionlist.hash
+done < $data_dir/questionlist.raw

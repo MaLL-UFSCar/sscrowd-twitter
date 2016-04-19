@@ -1,0 +1,68 @@
+#!/bin/bash
+
+data_dir_target=$1
+data_dir_reference=$2
+question_source=$3
+daily_questions=$4
+
+function check_best_period(){
+	begin=$1
+	end=$2
+	hour=$3
+	
+	if [ $end -gt $begin ] && [ $hour -ge $begin ] && [ $hour -le $end ]; then
+		return 0
+	elif [ $end -lt $begin ] && [ $hour -ge $begin ] || [ $hour -le $end ]; then
+		return 0
+	else return 1
+	fi
+}
+
+if [ $data_dir_reference != "0" ]; then
+
+	data_dir_reference=experiments/$2/data
+	answer_dir=$data_dir_reference/answers
+
+	read begin end <<< $(java -jar bin/timeframer.jar $data_dir_reference/questionlist.ref $answer_dir 2> /dev/null)
+
+	if [ $end -gt $begin ]; then 
+		best_period=$((end-begin))
+	else	best_period=$((24-begin+end))
+	fi
+
+	worst_period=$((24-best_period))
+
+	share_daily_questions=$daily_questions/2
+
+	best_interval=$(python -c "print int(round($best_period/float($share_daily_questions)))")
+	worst_interval=$(python -c "print int(round($worst_period/float($share_daily_questions)))")
+
+	base_date=$(date -d "+1 hour" '+%Y-%m-%d %H:%M:%S')
+
+	while read -r line; do
+
+		next_hour=$(date -d "$base_date" '+%H')
+
+		check_best_period $begin $end $next_hour
+		result=$?
+
+		echo $(date -d "$base_date" '+%Y-%m-%d %H:%M:%S') $line >> $data_dir_target/questionlist.sch
+
+		if [ $result == 0 ]; then
+			base_date=$(date -d "$base_date $best_interval hour")
+		else	base_date=$(date -d "$base_date $worst_interval hour")
+		fi
+
+	done < $question_source 
+	echo "scheduler will try to place questions when people are more responsive"
+
+else 	base_date=$(date -d "+1 hour" '+%Y-%m-%d %H:%M:%S')
+	while read -r line; do
+		echo $(date -d "$base_date" '+%Y-%m-%d %H:%M:%S') $line >> $data_dir_target/questionlist.sch
+		base_date=$(date -d "$base_date 1 hour")
+	done < $question_source
+	echo "scheduler will try to place 1 questions per hour"
+fi
+
+code=$(date +%Y%m%d%H%M%S)
+mv $question_source $question_source-$code.raw

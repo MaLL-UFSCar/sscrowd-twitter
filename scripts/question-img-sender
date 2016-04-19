@@ -1,0 +1,52 @@
+#!/bin/bash
+
+root_dir=$1
+data_dir=$2
+img_dir=$3
+
+if ! [[ -e $data_dir/questionlist.sch ]]; then							#if temporary question list does not exist
+	echo "no questionlist.sch found on data, please run ss-crowd scheduler"			#terminates on error
+	exit 1
+fi
+												
+img_list=$data_dir/questionlist.sch			
+
+scripts/log-sender -m $root_dir "started posting images"	
+
+while :; do
+
+	read -r sched_date sched_time img_path <<< $(head -n1 $img_list) 		#get a question from question list
+
+	now=$(date '+%s')
+	scheduled_time=$(date -d "$sched_date $sched_time" '+%s')
+
+	echo $now $scheduled_time
+
+	if (( $now > $scheduled_time )); then 
+
+		id_question=$(java -jar bin/twitter-img-sender.jar "Please help me to resolve this!" $img_path conf/twitterauth.conf) 				#get results from twitter java module
+		status=$?
+
+		code=$(date +%Y%m%d%H%M%S)
+
+		if [[ $status == 0 ]]; then 								#if twitter posting is successful
+			echo $code $id_question $img_path >> $data_dir/questionlist.ref
+			cp $img_path $img_dir
+			scripts/log-sender -m $root_dir "posted img with id $id_question and code $code"
+		else
+			scripts/log-sender -m $root_dir "error on posting image $img_path"
+		fi
+
+		sed -i '1d' $img_list 								#reduce iamge list
+
+		if ! [[ -s $img_list ]]; then							#if there are no more questions
+			rm $img_list								#remove temporary question list
+			scripts/log-sender -m $root_dir "no more questions to post"
+			exit 0										#exit loop
+		fi
+	fi	
+
+	sleep 1m 									#sleeps for a minute
+done
+
+

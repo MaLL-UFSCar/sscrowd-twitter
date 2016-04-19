@@ -1,0 +1,24 @@
+#!/bin/bash
+
+data_dir=$1
+min_answers=$2
+
+while read line; do
+
+	read code id_status question <<< $line
+
+	wc_res=$(wc -l $data_dir/answers/$code.ans)
+	st=$?
+
+	if [[ $st == 1 ]]; then
+		line_count=0
+	else
+		read line_count filename <<< $wc_res
+	fi
+
+	if [[ $line_count -lt $min_answers ]]; then
+		echo $question >> $data_dir/questionsource_resched.raw
+	fi
+
+done < $data_dir/questionlist.ref
+
