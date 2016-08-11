@@ -8,9 +8,8 @@ option=$1		#option for this runner
 exp_name=$2		#name of the experiment
 question_source=$3	#name of the file with the questions or image paths
 
-root_dir=$(echo experiments/$exp_name)	#path to experiment's directory
+root_dir=$(cat conf/sscrowd.conf | grep experiments_dir | cut -f2 -d'=') #path to experiment's directory
 logs_dir=$(echo $root_dir/logs)		#path to logs directory
-hist_dir=$(echo $logs_dir/hist)
 data_dir=$(echo $root_dir/data)		#path to data directory
 answer_dir=$(echo $data_dir/answers)	#path to answers directory
 img_dir=$(echo $data_dir/img)
@@ -23,7 +22,6 @@ function build(){
 	mkdir $data_dir
 	mkdir $answer_dir
 	mkdir $img_dir
-	mkdir $hist_dir
 
 	cp $question_source $data_dir/questionsource.raw	#rename questionfile to questionsource.raw
 
@@ -71,6 +69,10 @@ function reschedule(){
 	scripts/timeframer $data_dir $ref_exp $data_dir/questionsource_resched.raw $max_qpd
 }
 
+function list(){
+	ls $root_dir
+}
+
 #prints the usage of the options
 function helpp(){
 	echo "SS-Crowd Help"
@@ -79,8 +81,9 @@ function helpp(){
 	echo "-s: start posting questions"
 	echo "-i: start posting images"
 	echo "-r: start receiving answers"
-	echo "-c: add time scheduler for posting questions"
-	echo "-d: repost questions with few answers"
+	echo "-c: schedule questions to be posted"
+	echo "-d: reschedule questions with few answers"
+	echo "-l: list all experiments"
 	echo "-h: show SS-Crowd task"
 }
 
@@ -91,5 +94,6 @@ case $option in
 	-r)receive;;
 	-c)schedule;; 				# needs extra parameter (reference experiment)
 	-d)reschedule;;
+	-l)list;;
 	-h)helpp;;
 esac
