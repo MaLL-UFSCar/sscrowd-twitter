@@ -3,3 +3,4 @@ crowdsourcing.log
 /experiments/*
 /bin/*
 *.swp
+*.conf

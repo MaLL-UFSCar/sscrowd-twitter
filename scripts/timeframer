@@ -56,12 +56,12 @@ if [ $data_dir_reference != "0" ]; then
 	done < $question_source 
 	echo "scheduler will try to place questions when people are more responsive"
 
-else 	base_date=$(date -d "+1 hour" '+%Y-%m-%d %H:%M:%S')
+else 	base_date=$(date -d "+2 hour" '+%Y-%m-%d %H:%M:%S')
 	while read -r line; do
 		echo $(date -d "$base_date" '+%Y-%m-%d %H:%M:%S') $line >> $data_dir_target/questionlist.sch
-		base_date=$(date -d "$base_date 1 hour")
+		base_date=$(date -d "$base_date 2 hour")
 	done < $question_source
-	echo "scheduler will try to place 1 questions per hour"
+	echo "scheduler will try to place 2 questions per hour"
 fi
 
 code=$(date +%Y%m%d%H%M%S)

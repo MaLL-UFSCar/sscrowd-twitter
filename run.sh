@@ -48,7 +48,7 @@ function receive(){
 
 #set the time of posting for each question
 function schedule(){
-	max_qpd=0 
+	max_qpd=12 
 	read -p "experiment to be used as reference: " ref_exp
 	if [ $ref_exp != 0 ]; then 
 		read -p "max questions per day: " max_qpd
